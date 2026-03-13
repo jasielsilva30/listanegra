@@ -420,16 +420,7 @@ document.addEventListener("firebase-ready", ()=>{
   dbRemove  = window._remove;
   dbOnValue = window._onValue;
 
-  // check config
-  if(db._app.options.apiKey==="COLE_AQUI"){
-    document.getElementById("loadingScreen").innerHTML=`
-      <div style="max-width:500px;padding:30px;text-align:center">
-        <div style="font-size:3rem;margin-bottom:16px">⚙️</div>
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;margin-bottom:12px;color:#ff2d2d">Configure o Firebase</div>
-        <div style="color:#666;font-size:.82rem;line-height:1.8">Abra o arquivo <code style="color:#ffb800">index.html</code> e cole suas configurações do Firebase no lugar de <code style="color:#ffb800">COLE_AQUI</code>.<br><br>Veja o arquivo <code style="color:#ffb800">INSTRUCOES.md</code> para o passo a passo completo.</div>
-      </div>`;
-    return;
-  }
+  // config ok, continue
 
   const sess = loadSession();
   if(sess){ currentUser=sess; initApp(); }
