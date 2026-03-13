@@ -261,6 +261,7 @@ td{padding:12px 14px;font-size:.78rem;vertical-align:top}
     <button class="tab" id="tabCadastrar" onclick="switchTab('cadastrar')">➕ Cadastrar</button>
     <button class="tab" id="tabLista" onclick="switchTab('lista')">📋 Lista</button>
     <button class="tab" id="tabAdmin" style="display:none" onclick="switchTab('admin')">⚙ Administração <span id="adminBadgeCount" class="tab-badge" style="display:none"></span></button>
+    <button class="tab" id="tabBanner" style="display:none" onclick="switchTab('banner')">🖼 Banner</button>
   </div>
 
   <div class="content">
@@ -290,21 +291,59 @@ td{padding:12px 14px;font-size:.78rem;vertical-align:top}
 
     <!-- CADASTRAR -->
     <div class="panel" id="panelCadastrar">
-      <div class="card">
-        <div class="card-head"><div class="card-head-icon" style="background:var(--rdim)">🚫</div><div class="card-title">Cadastrar Revendedor Inadimplente</div></div>
-        <div class="card-body">
-          <div class="field-grid">
-            <div class="field"><label class="label">Telefone *</label><input id="cPhone" type="text" placeholder="(85) 99999-9999" oninput="fmtInput(this)"></div>
-            <div class="field"><label class="label">Nome (opcional)</label><input id="cNome" type="text" placeholder="Nome do revendedor"></div>
+      <div style="display:flex;gap:1px;background:var(--b);border-radius:8px;overflow:hidden;margin-bottom:16px">
+        <button id="stIndividual" onclick="switchSubTab('individual')" style="flex:1;padding:11px;text-align:center;font-size:.7rem;letter-spacing:2px;text-transform:uppercase;border:none;background:var(--red);color:#fff;font-family:var(--mono);cursor:pointer;transition:all .2s">➕ Individual</button>
+        <button id="stMassa" onclick="switchSubTab('massa')" style="flex:1;padding:11px;text-align:center;font-size:.7rem;letter-spacing:2px;text-transform:uppercase;border:none;background:transparent;color:var(--muted);font-family:var(--mono);cursor:pointer;transition:all .2s">📋 Em Massa (até 20)</button>
+      </div>
+      <div id="formIndividual">
+        <div class="card">
+          <div class="card-head"><div class="card-head-icon" style="background:var(--rdim)">🚫</div><div class="card-title">Cadastrar Revendedor Inadimplente</div></div>
+          <div class="card-body">
+            <div class="field-grid">
+              <div class="field"><label class="label">Telefone *</label><input id="cPhone" type="text" placeholder="(85) 99999-9999" oninput="fmtInput(this)"></div>
+              <div class="field"><label class="label">Nome (opcional)</label><input id="cNome" type="text" placeholder="Nome do revendedor"></div>
+            </div>
+            <div class="field-grid">
+              <div class="field"><label class="label">Servidor / Plataforma *</label><input id="cServidor" type="text" placeholder="Ex: PlayCineTop"></div>
+              <div class="field"><label class="label">Valor em Aberto (R$)</label><input id="cValor" type="text" placeholder="Ex: 150,00"></div>
+            </div>
+            <div class="field-full"><label class="label">Observação *</label><textarea id="cObs" placeholder="Descreva o motivo, meses em atraso, tentativas de contato..."></textarea></div>
+            <div class="form-actions">
+              <button class="btn btn-ghost" onclick="limparForm()">Limpar</button>
+              <button class="btn btn-red" onclick="doCadastrar()">🚫 Cadastrar na Lista Negra</button>
+            </div>
           </div>
-          <div class="field-grid">
-            <div class="field"><label class="label">Servidor / Plataforma *</label><input id="cServidor" type="text" placeholder="Ex: PlayCineTop"></div>
-            <div class="field"><label class="label">Valor em Aberto (R$)</label><input id="cValor" type="text" placeholder="Ex: 150,00"></div>
-          </div>
-          <div class="field-full"><label class="label">Observação *</label><textarea id="cObs" placeholder="Descreva o motivo, meses em atraso, tentativas de contato..."></textarea></div>
-          <div class="form-actions">
-            <button class="btn btn-ghost" onclick="limparForm()">Limpar</button>
-            <button class="btn btn-red" onclick="doCadastrar()">🚫 Cadastrar na Lista Negra</button>
+        </div>
+      </div>
+      <div id="formMassa" style="display:none">
+        <div class="card">
+          <div class="card-head"><div class="card-head-icon" style="background:var(--rdim)">📋</div><div class="card-title">Cadastrar em Massa — até 20 números</div></div>
+          <div class="card-body">
+            <div style="background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.78rem;line-height:2;color:#ccc">
+              <div style="color:var(--gold);font-weight:700;margin-bottom:6px">📌 Como copiar os números corretamente:</div>
+              Cole <strong style="color:#fff">um número por linha</strong> em qualquer um desses formatos:<br>
+              <code style="background:rgba(255,255,255,.06);padding:2px 8px;border-radius:3px;color:var(--green);display:inline-block;margin-top:4px;letter-spacing:1px">+55 92 92788-616</code>
+              <code style="background:rgba(255,255,255,.06);padding:2px 8px;border-radius:3px;color:var(--green);display:inline-block;margin-top:4px;letter-spacing:1px">(85) 99999-9999</code>
+              <code style="background:rgba(255,255,255,.06);padding:2px 8px;border-radius:3px;color:var(--green);display:inline-block;margin-top:4px;letter-spacing:1px">85999999999</code><br>
+              <div style="color:var(--muted);font-size:.7rem;margin-top:8px">⚠ Números duplicados já na base serão ignorados automaticamente. Máx. 20 por vez.</div>
+            </div>
+            <div class="field-grid">
+              <div class="field"><label class="label">Servidor / Plataforma *</label><input id="mServidor" type="text" placeholder="Ex: PlayCineTop"></div>
+              <div class="field"><label class="label">Valor em Aberto (R$)</label><input id="mValor" type="text" placeholder="Ex: 150,00 (mesmo para todos)"></div>
+            </div>
+            <div class="field-full" style="margin-bottom:14px"><label class="label">Observação * (aplicada a todos)</label><textarea id="mObs" placeholder="Ex: Inadimplente há 2 meses, sem retorno no WhatsApp..."></textarea></div>
+            <div class="field-full" style="margin-bottom:14px">
+              <label class="label">Cole os números aqui (um por linha) *</label>
+              <textarea id="mNumeros" style="min-height:160px;letter-spacing:1px;font-size:.9rem" placeholder="+55 92 9278-8616&#10;+55 85 9621-1576&#10;+55 11 98765-4321&#10;..."></textarea>
+            </div>
+            <div id="massaPreview" style="display:none;margin-bottom:14px">
+              <div style="font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Números detectados</div>
+              <div id="massaPreviewList" style="background:var(--bg);border:1px solid var(--b);border-radius:6px;padding:12px;max-height:160px;overflow-y:auto;font-size:.8rem;line-height:2.2"></div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-ghost" onclick="previewMassa()">👁 Pré-visualizar</button>
+              <button class="btn btn-red" onclick="doCadastrarMassa()">🚫 Cadastrar Todos</button>
+            </div>
           </div>
         </div>
       </div>
@@ -364,6 +403,62 @@ td{padding:12px 14px;font-size:.78rem;vertical-align:top}
       <!-- info -->
       <div style="background:rgba(255,45,45,.04);border:1px solid rgba(255,45,45,.1);border-radius:8px;padding:14px 16px;font-size:.72rem;color:var(--muted);line-height:1.8">
         🔑 <strong style="color:#aaa">Código de administrador:</strong> <code style="color:var(--gold);background:rgba(255,184,0,.08);padding:1px 8px;border-radius:3px" id="adminCodeDisplay"></code> — Compartilhe apenas com pessoas de total confiança.
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- BANNER -->
+    <div class="panel" id="panelBanner">
+      <div class="card">
+        <div class="card-head"><div class="card-head-icon" style="background:rgba(99,102,241,.15)">🖼</div><div class="card-title">Banner / Imagem de Fundo</div></div>
+        <div class="card-body">
+          <div style="background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:14px 16px;margin-bottom:18px;font-size:.78rem;color:#ccc;line-height:1.8">
+            💡 Personalize o fundo do sistema com uma imagem ou cor. A alteração é salva e aparece para todos os usuários.
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label class="label">Tipo de fundo</label>
+              <select id="bannerTipo" onchange="toggleBannerTipo()">
+                <option value="cor">Cor sólida</option>
+                <option value="gradiente">Gradiente</option>
+                <option value="url">URL de imagem</option>
+                <option value="upload">Upload de imagem</option>
+              </select>
+            </div>
+            <div class="field" id="fieldOpacity">
+              <label class="label">Opacidade da sobreposição escura</label>
+              <input type="range" id="bannerOpacity" min="0" max="95" value="70" oninput="document.getElementById('opacityVal').textContent=this.value+'%';previewBanner()" style="accent-color:var(--red);height:40px">
+              <span id="opacityVal" style="font-size:.72rem;color:var(--muted)">70%</span>
+            </div>
+          </div>
+          <div id="bannerFieldCor" class="field-grid">
+            <div class="field"><label class="label">Cor de fundo</label><input type="color" id="bannerCor" value="#080810" oninput="previewBanner()" style="height:44px;cursor:pointer"></div>
+          </div>
+          <div id="bannerFieldGrad" style="display:none" class="field-grid">
+            <div class="field"><label class="label">Cor inicial</label><input type="color" id="gradCor1" value="#080810" oninput="previewBanner()" style="height:44px;cursor:pointer"></div>
+            <div class="field"><label class="label">Cor final</label><input type="color" id="gradCor2" value="#1a0a2e" oninput="previewBanner()" style="height:44px;cursor:pointer"></div>
+          </div>
+          <div id="bannerFieldUrl" style="display:none" class="field-full" style="margin-bottom:14px">
+            <label class="label">URL da imagem (https://...)</label>
+            <input type="text" id="bannerUrl" placeholder="https://exemplo.com/imagem.jpg" oninput="previewBanner()">
+          </div>
+          <div id="bannerFieldUpload" style="display:none;margin-bottom:14px">
+            <label class="label">Selecionar imagem do computador</label>
+            <input type="file" id="bannerUpload" accept="image/*" onchange="handleBannerUpload(this)" style="background:var(--bg);border:1px solid var(--b);border-radius:4px;padding:10px;width:100%;color:var(--muted);cursor:pointer">
+          </div>
+          <!-- preview -->
+          <div style="margin-bottom:18px">
+            <div style="font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Pré-visualização</div>
+            <div id="bannerPreviewBox" style="width:100%;height:120px;border-radius:8px;border:1px solid var(--b);background:#080810;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--muted);transition:all .3s;background-size:cover;background-position:center">
+              Prévia aqui
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-ghost" onclick="resetBanner()">↺ Remover fundo</button>
+            <button class="btn btn-red" onclick="salvarBanner()">💾 Salvar Banner</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -500,10 +595,12 @@ function initApp(){
   if(currentUser.role==="admin"){
     document.getElementById("adminBadge").style.display="inline-block";
     document.getElementById("tabAdmin").style.display="flex";
+    document.getElementById("tabBanner").style.display="flex";
   }
   // preenche servidor no form
   document.getElementById("cServidor").value=currentUser.servidor||"";
 
+  loadBanner();
   // listen realtime
   dbOnValue(dbRef(db,"records"), snap=>{ allRecords=snap.val()||{}; updateStats(); if(document.getElementById("panelLista").classList.contains("active")) renderList(); });
   dbOnValue(dbRef(db,"users"),   snap=>{ allUsers=snap.val()||{};   updatePendentes(); if(currentUser.role==="admin"&&document.getElementById("panelAdmin").classList.contains("active")) renderAdmin(); });
@@ -686,6 +783,145 @@ async function removerUser(id){
   if(!confirm("Remover este parceiro?")) return;
   await dbRemove(dbRef(db,"users/"+id));
   showToast("Parceiro removido.");
+}
+
+// ── SUB-TABS CADASTRAR ──
+function switchSubTab(t){
+  document.getElementById("formIndividual").style.display = t==="individual"?"block":"none";
+  document.getElementById("formMassa").style.display      = t==="massa"?"block":"none";
+  document.getElementById("stIndividual").style.background= t==="individual"?"var(--red)":"transparent";
+  document.getElementById("stIndividual").style.color     = t==="individual"?"#fff":"var(--muted)";
+  document.getElementById("stMassa").style.background     = t==="massa"?"var(--red)":"transparent";
+  document.getElementById("stMassa").style.color          = t==="massa"?"#fff":"var(--muted)";
+  document.getElementById("massaPreview").style.display   = "none";
+}
+
+// ── CADASTRAR EM MASSA ──
+function parseMassaNumbers(){
+  const raw = document.getElementById("mNumeros").value;
+  return raw.split("\n")
+    .map(l=>l.trim())
+    .filter(l=>l.length>0)
+    .map(l=>{ const c=cleanPhone(l); return {original:l, clean:c, valid:c.length>=8}; });
+}
+
+function previewMassa(){
+  const nums = parseMassaNumbers();
+  const recs = Object.values(allRecords);
+  const previewEl = document.getElementById("massaPreview");
+  const listEl = document.getElementById("massaPreviewList");
+  if(!nums.length){ showToast("Nenhum número detectado.","error"); return; }
+  previewEl.style.display="block";
+  listEl.innerHTML = nums.slice(0,20).map(n=>{
+    const jaExiste = recs.find(r=>cleanPhone(r.telefone)===n.clean);
+    const color = !n.valid?"var(--muted)":jaExiste?"var(--gold)":"var(--green)";
+    const status = !n.valid?"❌ inválido":jaExiste?"⚠ já cadastrado":"✅ será cadastrado";
+    return `<div style="color:${color}">${n.original} <span style="color:var(--muted);font-size:.7rem">— ${status}</span></div>`;
+  }).join("");
+  if(nums.length>20) listEl.innerHTML+=`<div style="color:var(--red);margin-top:6px">⚠ Apenas os primeiros 20 serão processados.</div>`;
+}
+
+async function doCadastrarMassa(){
+  const servidor = document.getElementById("mServidor").value.trim();
+  const valor    = document.getElementById("mValor").value.trim();
+  const obs      = document.getElementById("mObs").value.trim();
+  if(!servidor){ showToast("Informe o servidor.","error"); return; }
+  if(!obs){ showToast("Adicione uma observação.","error"); return; }
+  const nums = parseMassaNumbers().filter(n=>n.valid).slice(0,20);
+  if(!nums.length){ showToast("Nenhum número válido encontrado.","error"); return; }
+  const recs = Object.values(allRecords);
+  let salvos=0, duplicados=0;
+  for(const n of nums){
+    if(recs.find(r=>cleanPhone(r.telefone)===n.clean)){ duplicados++; continue; }
+    const newRef=dbPush(dbRef(db,"records"));
+    await dbSet(newRef,{ id:newRef.key, telefone:n.original.trim(), nome:"", servidor, valor, observacao:obs, cadastradoPor:currentUser.nome, cadastradoPorId:currentUser.id, data:nowISO() });
+    salvos++;
+  }
+  showToast(`${salvos} cadastrado(s)${duplicados>0?`, ${duplicados} ignorado(s) (já existiam)`:""}!`);
+  document.getElementById("mNumeros").value="";
+  document.getElementById("mObs").value="";
+  document.getElementById("massaPreview").style.display="none";
+  if(salvos>0) setTimeout(()=>switchTab("lista"),1200);
+}
+
+// ── BANNER ──
+let bannerData = null;
+
+function toggleBannerTipo(){
+  const t=document.getElementById("bannerTipo").value;
+  document.getElementById("bannerFieldCor").style.display   = t==="cor"?"grid":"none";
+  document.getElementById("bannerFieldGrad").style.display  = t==="gradiente"?"grid":"none";
+  document.getElementById("bannerFieldUrl").style.display   = t==="url"?"block":"none";
+  document.getElementById("bannerFieldUpload").style.display= t==="upload"?"block":"none";
+  previewBanner();
+}
+
+function previewBanner(){
+  const t=document.getElementById("bannerTipo").value;
+  const op=document.getElementById("bannerOpacity").value;
+  const box=document.getElementById("bannerPreviewBox");
+  let bg="";
+  if(t==="cor"){ const c=document.getElementById("bannerCor").value; bg=c; }
+  else if(t==="gradiente"){ const c1=document.getElementById("gradCor1").value; const c2=document.getElementById("gradCor2").value; bg=`linear-gradient(135deg,${c1},${c2})`; }
+  else if(t==="url"){ const u=document.getElementById("bannerUrl").value; bg=u?`url(${u})`:"#080810"; }
+  else if(t==="upload"){ bg=bannerData?"url("+bannerData+")":"#080810"; }
+  box.style.background=bg;
+  box.style.backgroundSize="cover";
+  box.style.backgroundPosition="center";
+  box.innerHTML=`<div style="background:rgba(0,0,0,${op/100});width:100%;height:100%;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.75rem;color:rgba(255,255,255,.5)">Sobreposição: ${op}%</div>`;
+}
+
+function handleBannerUpload(el){
+  const file=el.files[0]; if(!file) return;
+  if(file.size>2*1024*1024){ showToast("Imagem muito grande! Máximo 2MB.","error"); return; }
+  const reader=new FileReader();
+  reader.onload=e=>{ bannerData=e.target.result; previewBanner(); };
+  reader.readAsDataURL(file);
+}
+
+async function salvarBanner(){
+  const t=document.getElementById("bannerTipo").value;
+  const op=document.getElementById("bannerOpacity").value;
+  let cfg={tipo:t, opacity:op};
+  if(t==="cor") cfg.cor=document.getElementById("bannerCor").value;
+  else if(t==="gradiente"){ cfg.cor1=document.getElementById("gradCor1").value; cfg.cor2=document.getElementById("gradCor2").value; }
+  else if(t==="url"){ cfg.url=document.getElementById("bannerUrl").value; if(!cfg.url){ showToast("Cole a URL da imagem.","error"); return; } }
+  else if(t==="upload"){ if(!bannerData){ showToast("Selecione uma imagem.","error"); return; } cfg.dataUrl=bannerData; }
+  try{
+    await dbSet(dbRef(db,"config/banner"), cfg);
+    showToast("Banner salvo! Todos verão o novo fundo.");
+    applyBanner(cfg);
+  }catch(e){ showToast("Erro ao salvar banner.","error"); }
+}
+
+async function resetBanner(){
+  if(!confirm("Remover o banner e voltar ao fundo padrão?")) return;
+  await dbRemove(dbRef(db,"config/banner"));
+  applyBanner(null);
+  showToast("Banner removido.");
+}
+
+function applyBanner(cfg){
+  const app=document.getElementById("appScreen");
+  if(!cfg){ app.style.backgroundImage=""; app.style.backgroundColor=""; return; }
+  let bg="";
+  if(cfg.tipo==="cor") bg=cfg.cor;
+  else if(cfg.tipo==="gradiente") bg=`linear-gradient(135deg,${cfg.cor1},${cfg.cor2})`;
+  else if(cfg.tipo==="url"||cfg.tipo==="upload"){ const src=cfg.dataUrl||cfg.url; bg=`url(${src})`; }
+  if(cfg.tipo==="cor"||cfg.tipo==="gradiente"){ app.style.backgroundColor=bg; app.style.backgroundImage=""; }
+  else{ app.style.backgroundImage=bg; app.style.backgroundSize="cover"; app.style.backgroundPosition="center"; app.style.backgroundAttachment="fixed"; }
+  // overlay
+  let overlay=document.getElementById("bannerOverlay");
+  if(!overlay){ overlay=document.createElement("div"); overlay.id="bannerOverlay"; overlay.style.cssText="position:fixed;inset:0;pointer-events:none;z-index:0"; document.body.appendChild(overlay); }
+  overlay.style.background=`rgba(0,0,0,${(cfg.opacity||70)/100})`;
+}
+
+// load banner on init
+async function loadBanner(){
+  try{
+    const snap=await dbGet(dbRef(db,"config/banner"));
+    if(snap.val()) applyBanner(snap.val());
+  }catch{}
 }
 </script>
 </body>
