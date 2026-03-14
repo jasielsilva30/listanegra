@@ -575,20 +575,27 @@ let allUsers    = {};
 
 // ── UTILS ──
 function cleanPhone(p){
+  // remove everything except digits
   let v=(p||"").replace(/\D/g,"");
-  if(v.length>11 && v.startsWith("55")) v=v.slice(2);
+  // remove country code: +55, 0055, 55 prefix when total > 11 digits
+  if(v.length>=12 && v.startsWith("55")) v=v.slice(2);
+  if(v.length>=13 && v.startsWith("0055")) v=v.slice(4);
   return v;
 }
 function fmtPhone(v){
   v=(v||"").replace(/\D/g,"");
-  // remove leading country code 55
-  if(v.length>11 && v.startsWith("55")) v=v.slice(2);
+  if(v.length>=12 && v.startsWith("55")) v=v.slice(2);
+  if(v.length>=13 && v.startsWith("0055")) v=v.slice(4);
+  if(!v) return "";
   if(v.length<=10) return v.replace(/^(\d{0,2})(\d{0,4})(\d{0,4})/,(_,a,b,c)=>[a&&`(${a})`,b,c].filter(Boolean).join(" ").replace(/ (\d)/," $1").trim());
   return v.replace(/^(\d{0,2})(\d{0,5})(\d{0,4})/,(_,a,b,c)=>[a&&`(${a})`,b,c].filter(Boolean).join(" ").replace(/ (\d)/," $1").trim());
 }
 function fmtInput(el){ el.value = fmtPhone(el.value); }
 function handlePaste(el){
-  setTimeout(()=>{ el.value = fmtPhone(el.value); },10);
+  // retry at 10ms, 50ms, 150ms, 300ms to handle slow paste on mobile/apps
+  [10,50,150,300].forEach(ms=>setTimeout(()=>{
+    if(el.value) el.value = fmtPhone(el.value);
+  }, ms));
 }
 function fmtDate(d){ return new Date(d).toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}); }
 function fmtDateS(d){ return new Date(d).toLocaleDateString("pt-BR"); }
@@ -1085,7 +1092,8 @@ function setSearchMode(m){
 function onSearchInput(el){
   if(searchMode==="phone") fmtInput(el);
   clearResult();
-  document.getElementById("multiResultArea").style.display="none";
+  const ma=document.getElementById("multiResultArea");
+  if(ma) ma.style.display="none";
 }
 function doBuscar(){
   const raw=document.getElementById("searchInput").value.trim();
@@ -1094,10 +1102,13 @@ function doBuscar(){
   const area=document.getElementById("resultArea");
   const multi=document.getElementById("multiResultArea");
   if(searchMode==="phone"){
+    // normalize: strip any non-digit, remove country code
     const clean=cleanPhone(raw);
-    if(clean.length<8){ showToast("Digite um número válido.","error"); return; }
-    registrarLog("consulta","Consultou: "+raw, recs.find(r=>cleanPhone(r.telefone)===clean)?"inadimplente":"limpo");
-    const found=recs.find(r=>cleanPhone(r.telefone)===clean);
+    if(clean.length<8){ showToast("Digite um número válido (mín. 8 dígitos).","error"); return; }
+    // match: compare last 9 digits to handle partial matches too
+    const tail=n=>cleanPhone(n).slice(-9);
+    const found=recs.find(r=>tail(r.telefone)===tail(raw)||cleanPhone(r.telefone)===clean);
+    registrarLog("consulta","Consultou: "+raw, found?"inadimplente":"limpo");
     multi.style.display="none";
     sessionConsultas.unshift({numero:raw,resultado:found?"🔴 Inadimplente":"✅ Limpo",hora:new Date().toLocaleTimeString("pt-BR")});
     if(sessionConsultas.length>10) sessionConsultas.pop();
