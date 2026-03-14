@@ -958,6 +958,81 @@ async function doCadastrarMassa(){
   document.getElementById("massaPreview").style.display="none";
   if(salvos>0) setTimeout(()=>switchTab("lista"),1200);
 }
+// ── BANNER FUNCTIONS ──
+let bannerData = null;
+
+function toggleBannerTipo(){
+  const t=document.getElementById("bannerTipo").value;
+  document.getElementById("bannerFieldCor").style.display   = t==="cor"?"grid":"none";
+  document.getElementById("bannerFieldGrad").style.display  = t==="gradiente"?"grid":"none";
+  document.getElementById("bannerFieldUrl").style.display   = t==="url"?"block":"none";
+  document.getElementById("bannerFieldUpload").style.display= t==="upload"?"block":"none";
+  previewBanner();
+}
+
+function previewBanner(){
+  const t=document.getElementById("bannerTipo").value;
+  const op=parseInt(document.getElementById("bannerOpacity").value||70);
+  const ca=parseInt(document.getElementById("cardAlpha").value||85);
+  document.getElementById("opacityVal").textContent=op+"%";
+  document.getElementById("cardAlphaVal").textContent=ca+"%";
+  const box=document.getElementById("bannerPreviewBox");
+  if(!box) return;
+  let bg="";
+  if(t==="cor") bg=document.getElementById("bannerCor").value;
+  else if(t==="gradiente") bg=`linear-gradient(135deg,${document.getElementById("gradCor1").value},${document.getElementById("gradCor2").value})`;
+  else if(t==="url"){ const u=document.getElementById("bannerUrl").value; bg=u?`url(${u})`:"#080810"; }
+  else if(t==="upload") bg=bannerData?`url(${bannerData})`:"#080810";
+  box.style.background=bg;
+  box.style.backgroundSize="cover";
+  box.style.backgroundPosition="center";
+  box.innerHTML=`<div style="width:100%;height:100%;background:rgba(0,0,0,${op/100});border-radius:8px;display:flex;align-items:center;justify-content:center"><div style="background:rgba(15,15,26,${ca/100});border:1px solid rgba(30,30,48,.6);border-radius:6px;padding:8px 16px;font-size:.72rem;color:#e8e8f0">Cards: ${ca}% opaco · Overlay: ${op}% escuro</div></div>`;
+}
+
+function handleBannerUpload(el){
+  const file=el.files[0]; if(!file) return;
+  if(file.size>3*1024*1024){ showToast("Imagem muito grande! Máximo 3MB.","error"); return; }
+  const reader=new FileReader();
+  reader.onload=e=>{ bannerData=e.target.result; previewBanner(); showToast("Imagem carregada! Clique em Salvar."); };
+  reader.readAsDataURL(file);
+}
+
+async function salvarBanner(){
+  const t=document.getElementById("bannerTipo").value;
+  const op=document.getElementById("bannerOpacity").value||"70";
+  const ca=document.getElementById("cardAlpha").value||"85";
+  let cfg={tipo:t, opacity:op, cardAlpha:ca};
+  if(t==="cor"){
+    cfg.cor=document.getElementById("bannerCor").value;
+  } else if(t==="gradiente"){
+    cfg.cor1=document.getElementById("gradCor1").value;
+    cfg.cor2=document.getElementById("gradCor2").value;
+  } else if(t==="url"){
+    cfg.url=document.getElementById("bannerUrl").value;
+    if(!cfg.url){ showToast("Cole a URL da imagem.","error"); return; }
+  } else if(t==="upload"){
+    if(!bannerData){ showToast("Selecione uma imagem.","error"); return; }
+    cfg.dataUrl=bannerData;
+  }
+  try{
+    await dbSet(dbRef(db,"config/banner"), cfg);
+    showToast("Banner salvo com sucesso!");
+    applyBanner(cfg);
+  } catch(e){
+    showToast("Erro ao salvar banner.","error");
+    console.error(e);
+  }
+}
+
+async function resetBanner(){
+  if(!confirm("Remover o banner e voltar ao fundo padrão?")) return;
+  try{
+    await dbRemove(dbRef(db,"config/banner"));
+    applyBanner(null);
+    showToast("Banner removido.");
+  } catch(e){ showToast("Erro ao remover.","error"); }
+}
+
 function applyBanner(cfg){
   const body=document.body;
   if(!cfg){
