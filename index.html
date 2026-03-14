@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lista Negra — Revendedores Inadimplentes</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <!-- FIREBASE SDK -->
 <script type="module">
@@ -276,6 +277,8 @@ td{padding:12px 14px;font-size:.78rem;vertical-align:top}
     <button class="tab" id="tabCadastrar" onclick="switchTab('cadastrar')">➕ Cadastrar</button>
     <button class="tab" id="tabLista" onclick="switchTab('lista')">📋 Lista</button>
     <button class="tab" id="tabAdmin" style="display:none" onclick="switchTab('admin')">⚙ Administração <span id="adminBadgeCount" class="tab-badge" style="display:none"></span></button>
+    <button class="tab" id="tabDashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab" id="tabLog" style="display:none" onclick="switchTab('log')">📜 Log</button>
     <button class="tab" id="tabBanner" style="display:none" onclick="switchTab('banner')">🖼 Banner</button>
   </div>
 
@@ -292,14 +295,20 @@ td{padding:12px 14px;font-size:.78rem;vertical-align:top}
       <div class="card">
         <div class="card-head"><div class="card-head-icon">🔍</div><div class="card-title">Consultar Número</div></div>
         <div class="card-body">
+          <div style="display:flex;gap:1px;background:var(--b);border-radius:6px;overflow:hidden;margin-bottom:14px;width:fit-content">
+            <button id="sByPhone" onclick="setSearchMode('phone')" style="padding:8px 16px;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;border:none;background:var(--red);color:#fff;font-family:var(--mono);cursor:pointer">📞 Número</button>
+            <button id="sByName" onclick="setSearchMode('name')" style="padding:8px 16px;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;border:none;background:transparent;color:var(--muted);font-family:var(--mono);cursor:pointer">👤 Nome</button>
+            <button id="sByServer" onclick="setSearchMode('server')" style="padding:8px 16px;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;border:none;background:transparent;color:var(--muted);font-family:var(--mono);cursor:pointer">🖥 Servidor</button>
+          </div>
           <div class="search-row">
             <div class="search-wrap">
-              <span class="search-icon">📞</span>
-              <input class="search-input" id="searchInput" placeholder="Digite ou cole o número: (85) 99999-9999" oninput="fmtInput(this);clearResult()" onpaste="handlePaste(this);setTimeout(()=>clearResult(),15)" onkeydown="if(event.key==='Enter')doBuscar()">
+              <span class="search-icon">🔍</span>
+              <input class="search-input" id="searchInput" placeholder="Digite ou cole o número: (85) 99999-9999" oninput="onSearchInput(this)" onpaste="handlePaste(this);setTimeout(()=>onSearchInput(this),15)" onkeydown="if(event.key==='Enter')doBuscar()">
             </div>
             <button class="btn btn-red" onclick="doBuscar()">🔍 Consultar</button>
           </div>
           <div id="resultArea"></div>
+          <div id="multiResultArea" style="display:none"></div>
         </div>
       </div>
     </div>
@@ -388,6 +397,50 @@ td{padding:12px 14px;font-size:.78rem;vertical-align:top}
       </div>
     </div>
 
+    <!-- DASHBOARD -->
+    <div class="panel" id="panelDashboard">
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-head"><div class="card-head-icon" style="background:rgba(99,102,241,.15)">📊</div><div class="card-title">Inadimplentes por Servidor</div></div>
+        <div class="card-body"><canvas id="chartServidor" style="max-height:280px"></canvas></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div class="card">
+          <div class="card-head"><div class="card-head-icon" style="background:rgba(255,184,0,.1)">📅</div><div class="card-title">Cadastros por Mês</div></div>
+          <div class="card-body"><canvas id="chartMes" style="max-height:200px"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-head-icon" style="background:rgba(0,201,107,.1)">👥</div><div class="card-title">Top Parceiros</div></div>
+          <div class="card-body"><div id="topParceiros"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-head-icon">🔍</div><div class="card-title">Últimas Consultas</div></div>
+        <div class="card-body"><div id="ultimasConsultas" style="font-size:.8rem;color:var(--muted)">Nenhuma consulta ainda nesta sessão.</div></div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="panel" id="panelLog">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-head-icon">📜</div>
+          <div class="card-title">Log de Atividades</div>
+          <span class="badge badge-red" style="margin-left:auto" id="logCount">0</span>
+          <button class="btn-sm" style="margin-left:8px" onclick="limparLog()" title="Limpar log">🗑</button>
+        </div>
+        <div class="card-body">
+          <div style="margin-bottom:14px"><input type="text" id="logFilter" placeholder="Filtrar log..." oninput="renderLog()"></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhe</th><th>Resultado</th></tr></thead>
+              <tbody id="logBody"></tbody>
+            </table>
+            <div id="logEmpty" class="empty" style="display:none"><div class="empty-icon">📜</div><div style="font-size:.8rem">Nenhuma atividade registrada</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ADMIN -->
     <div class="panel" id="panelAdmin">
       <!-- pendentes -->
@@ -409,7 +462,7 @@ td{padding:12px 14px;font-size:.78rem;vertical-align:top}
         <div class="card-body">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Nome</th><th>Telefone</th><th>Servidor</th><th>Perfil</th><th>Desde</th><th></th></tr></thead>
+              <thead><tr><th>Nome</th><th>Telefone</th><th>Servidor</th><th>Perfil</th><th>Acesso</th><th>Desde</th><th></th></tr></thead>
               <tbody id="ativosBody"></tbody>
             </table>
           </div>
@@ -597,6 +650,8 @@ async function doLogin(){
     currentUser=u; saveSession(u);
     document.getElementById("authScreen").style.display="none";
     initApp();
+    // log login after init
+    setTimeout(()=>registrarLog("login","Login realizado","sucesso"),1500);
   }catch(e){ showToast("Erro ao conectar. Verifique o Firebase.","error"); console.error(e); }
 }
 
@@ -646,13 +701,19 @@ function initApp(){
     document.getElementById("adminBadge").style.display="inline-block";
     document.getElementById("tabAdmin").style.display="flex";
     document.getElementById("tabBanner").style.display="flex";
+    document.getElementById("tabLog").style.display="flex";
   }
   // preenche servidor no form
   document.getElementById("cServidor").value=currentUser.servidor||"";
 
   loadBanner();
+  // hide cadastrar tab if soConsulta
+  if(currentUser.acesso==="soConsulta"){
+    document.getElementById("tabCadastrar").style.display="none";
+  }
   // listen realtime
-  dbOnValue(dbRef(db,"records"), snap=>{ allRecords=snap.val()||{}; updateStats(); if(document.getElementById("panelLista").classList.contains("active")) renderList(); });
+  dbOnValue(dbRef(db,"records"), snap=>{ allRecords=snap.val()||{}; updateStats(); if(document.getElementById("panelLista").classList.contains("active")) renderList(); if(document.getElementById("panelDashboard").classList.contains("active")) renderDashboard(); });
+  if(currentUser.role==="admin") dbOnValue(dbRef(db,"logs"), snap=>{ allLogs=snap.val()||{}; if(document.getElementById("panelLog").classList.contains("active")) renderLog(); });
   dbOnValue(dbRef(db,"users"),   snap=>{ allUsers=snap.val()||{};   updatePendentes(); if(currentUser.role==="admin"&&document.getElementById("panelAdmin").classList.contains("active")) renderAdmin(); });
 }
 
@@ -679,9 +740,12 @@ function switchTab(t){
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
   document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
   document.getElementById("panel"+cap(t)).classList.add("active");
-  document.getElementById("tab"+cap(t)).classList.add("active");
+  const tabEl=document.getElementById("tab"+cap(t));
+  if(tabEl) tabEl.classList.add("active");
   if(t==="lista") renderList();
   if(t==="admin"&&currentUser.role==="admin") renderAdmin();
+  if(t==="dashboard") renderDashboard();
+  if(t==="log") renderLog();
 }
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
@@ -694,6 +758,7 @@ function doBuscar(){
   const recs=Object.values(allRecords);
   const found=recs.find(r=>cleanPhone(r.telefone)===clean);
   const area=document.getElementById("resultArea");
+  registrarLog("consulta","Consultou: "+raw, found?"inadimplente encontrado":"limpo");
   if(found){
     area.innerHTML=`
     <div class="result-found">
@@ -742,6 +807,7 @@ async function doCadastrar(){
     const newRef=dbPush(dbRef(db,"records"));
     await dbSet(newRef,{ id:newRef.key, telefone, nome, servidor, valor, observacao:obs, cadastradoPor:currentUser.nome, cadastradoPorId:currentUser.id, data:nowISO() });
     showToast("Cadastrado na lista negra!");
+    registrarLog("cadastro","Cadastrou número: "+telefone,"sucesso");
     limparForm(); switchTab("lista");
   }catch(e){ showToast("Erro ao salvar.","error"); console.error(e); }
 }
@@ -924,6 +990,139 @@ async function loadBanner(){
     const snap=await dbGet(dbRef(db,"config/banner"));
     if(snap.val()) applyBanner(snap.val());
   }catch(e){ console.log("banner:",e); }
+}
+// ── SEARCH MODES ──
+let searchMode = "phone";
+let sessionConsultas = [];
+function setSearchMode(m){
+  searchMode=m;
+  const inp=document.getElementById("searchInput");
+  const ph={"phone":"Digite ou cole o número: (85) 99999-9999","name":"Digite o nome do revendedor...","server":"Digite o nome do servidor..."};
+  inp.placeholder=ph[m]||"";
+  inp.value="";
+  clearResult();
+  document.getElementById("multiResultArea").style.display="none";
+  ["phone","name","server"].forEach(x=>{
+    const b=document.getElementById("sBy"+x.charAt(0).toUpperCase()+x.slice(1));
+    if(b){ b.style.background=x===m?"var(--red)":"transparent"; b.style.color=x===m?"#fff":"var(--muted)"; }
+  });
+}
+function onSearchInput(el){
+  if(searchMode==="phone") fmtInput(el);
+  clearResult();
+  document.getElementById("multiResultArea").style.display="none";
+}
+function doBuscar(){
+  const raw=document.getElementById("searchInput").value.trim();
+  if(!raw){ showToast("Digite algo para buscar.","error"); return; }
+  const recs=Object.values(allRecords);
+  const area=document.getElementById("resultArea");
+  const multi=document.getElementById("multiResultArea");
+  if(searchMode==="phone"){
+    const clean=cleanPhone(raw);
+    if(clean.length<8){ showToast("Digite um número válido.","error"); return; }
+    registrarLog("consulta","Consultou: "+raw, recs.find(r=>cleanPhone(r.telefone)===clean)?"inadimplente":"limpo");
+    const found=recs.find(r=>cleanPhone(r.telefone)===clean);
+    multi.style.display="none";
+    sessionConsultas.unshift({numero:raw,resultado:found?"🔴 Inadimplente":"✅ Limpo",hora:new Date().toLocaleTimeString("pt-BR")});
+    if(sessionConsultas.length>10) sessionConsultas.pop();
+    if(found){
+      area.innerHTML=`<div class="result-found"><div class="result-head"><div class="result-icon" style="background:var(--rdim)">⛔</div><div><div class="result-title" style="color:var(--red)">INADIMPLENTE ENCONTRADO</div><div class="result-sub">Este número está na lista negra</div></div></div><div class="result-body"><div class="result-row"><div class="result-key">Telefone</div><div style="color:var(--red);font-weight:700">${esc(found.telefone)}</div></div>${found.nome?`<div class="result-row"><div class="result-key">Nome</div><div>${esc(found.nome)}</div></div>`:""}<div class="result-row"><div class="result-key">Servidor</div><div style="color:var(--gold)">${esc(found.servidor)}</div></div>${found.valor?`<div class="result-row"><div class="result-key">Valor</div><div style="color:var(--red);font-weight:700">R$ ${esc(found.valor)}</div></div>`:""}<div class="result-row"><div class="result-key">Observação</div><div style="color:#aaa">${esc(found.observacao)}</div></div><div class="result-row"><div class="result-key">Cadastrado por</div><div style="color:var(--muted)">${esc(found.cadastradoPor)}</div></div><div class="result-row"><div class="result-key">Data</div><div style="color:var(--muted2)">${fmtDate(found.data)}</div></div></div></div>`;
+    } else {
+      area.innerHTML=`<div class="result-clean"><div class="result-head"><div class="result-icon" style="background:var(--gdim)">✅</div><div><div class="result-title" style="color:var(--green)">NÚMERO LIMPO</div><div class="result-sub">Sem registros de inadimplência</div></div></div><div class="result-body"><div class="result-row"><div class="result-key">Número</div><div style="color:var(--green);font-weight:700">${esc(raw)}</div></div><div class="result-row"><div class="result-key">Status</div><div style="color:var(--green)">Nenhuma ocorrência encontrada ✓</div></div></div></div>`;
+    }
+  } else {
+    area.innerHTML="";
+    const q=raw.toLowerCase();
+    const results=searchMode==="name"
+      ? recs.filter(r=>r.nome&&r.nome.toLowerCase().includes(q))
+      : recs.filter(r=>r.servidor&&r.servidor.toLowerCase().includes(q));
+    registrarLog("consulta",`Buscou por ${searchMode==="name"?"nome":"servidor"}: ${raw}`,results.length+" resultado(s)");
+    if(!results.length){ multi.style.display="block"; multi.innerHTML=`<div class="result-clean"><div class="result-head"><div class="result-icon" style="background:var(--gdim)">✅</div><div><div class="result-title" style="color:var(--green)">NENHUM RESULTADO</div><div class="result-sub">Nenhum registro encontrado para "${esc(raw)}"</div></div></div></div>`; return; }
+    multi.style.display="block";
+    multi.innerHTML=`<div style="font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">${results.length} resultado(s) encontrado(s)</div>`+
+    results.map(r=>`<div class="result-found" style="margin-bottom:10px"><div class="result-head"><div class="result-icon" style="background:var(--rdim)">⛔</div><div><div class="result-title" style="color:var(--red);font-size:.95rem">${esc(r.telefone)}</div><div class="result-sub">${esc(r.servidor)} ${r.valor?"· R$ "+esc(r.valor):""}</div></div></div><div class="result-body"><div class="result-row"><div class="result-key">Nome</div><div>${r.nome?esc(r.nome):"—"}</div></div><div class="result-row"><div class="result-key">Observação</div><div style="color:#aaa">${esc(r.observacao)}</div></div><div class="result-row"><div class="result-key">Por</div><div style="color:var(--muted)">${esc(r.cadastradoPor)} · ${fmtDateS(r.data)}</div></div></div></div>`).join("");
+  }
+}
+
+// ── LOG DE ATIVIDADES ──
+let allLogs = {};
+async function registrarLog(tipo, detalhe, resultado){
+  if(!currentUser) return;
+  try{
+    const newRef=dbPush(dbRef(db,"logs"));
+    await dbSet(newRef,{id:newRef.key,tipo,detalhe,resultado,usuario:currentUser.nome,userId:currentUser.id,data:nowISO()});
+  }catch(e){}
+}
+function renderLog(){
+  const q=(document.getElementById("logFilter").value||"").toLowerCase();
+  const logs=Object.values(allLogs);
+  const filtered=q?logs.filter(l=>(l.usuario||"").toLowerCase().includes(q)||(l.detalhe||"").toLowerCase().includes(q)||(l.resultado||"").toLowerCase().includes(q)):logs;
+  const sorted=[...filtered].sort((a,b)=>new Date(b.data)-new Date(a.data)).slice(0,200);
+  const body=document.getElementById("logBody");
+  const empty=document.getElementById("logEmpty");
+  document.getElementById("logCount").textContent=logs.length;
+  if(!sorted.length){body.innerHTML="";empty.style.display="block";return;}
+  empty.style.display="none";
+  const tipoIcon={"consulta":"🔍","cadastro":"🚫","login":"👤","massa":"📋"};
+  body.innerHTML=sorted.map(l=>`<tr>
+    <td class="td-date" style="white-space:nowrap">${fmtDate(l.data)}</td>
+    <td style="font-size:.78rem;font-weight:700">${esc(l.usuario||"")}</td>
+    <td><span class="badge ${l.tipo==="cadastro"?"badge-red":l.tipo==="consulta"?"badge-green":"badge-gold"}">${tipoIcon[l.tipo]||"•"} ${esc(l.tipo)}</span></td>
+    <td style="font-size:.75rem;color:#aaa;max-width:200px">${esc(l.detalhe||"")}</td>
+    <td style="font-size:.75rem;color:${l.resultado==="limpo"?"var(--green)":l.resultado==="inadimplente"?"var(--red)":"var(--muted)"}">${esc(l.resultado||"")}</td>
+  </tr>`).join("");
+}
+async function limparLog(){
+  if(!confirm("Limpar todo o log de atividades?")) return;
+  await dbSet(dbRef(db,"logs"),null);
+  showToast("Log limpo.");
+}
+
+// ── DASHBOARD ──
+let chartServidorInst=null, chartMesInst=null;
+function renderDashboard(){
+  const recs=Object.values(allRecords);
+  // Chart servidores
+  const servMap={};
+  recs.forEach(r=>{ servMap[r.servidor]=(servMap[r.servidor]||0)+1; });
+  const servLabels=Object.keys(servMap).sort((a,b)=>servMap[b]-servMap[a]).slice(0,10);
+  const servData=servLabels.map(k=>servMap[k]);
+  const ctx1=document.getElementById("chartServidor").getContext("2d");
+  if(chartServidorInst) chartServidorInst.destroy();
+  chartServidorInst=new Chart(ctx1,{type:"bar",data:{labels:servLabels,datasets:[{label:"Inadimplentes",data:servData,backgroundColor:"rgba(255,45,45,.7)",borderColor:"#ff2d2d",borderWidth:1,borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#666",font:{family:"IBM Plex Mono",size:11}}},y:{ticks:{color:"#666",stepSize:1},grid:{color:"rgba(255,255,255,.05)"}}}}});
+  // Chart meses
+  const mesMap={};
+  recs.forEach(r=>{
+    const d=new Date(r.data);
+    const k=`${d.getMonth()+1}/${d.getFullYear()}`;
+    mesMap[k]=(mesMap[k]||0)+1;
+  });
+  const mesLabels=Object.keys(mesMap).slice(-6);
+  const mesData=mesLabels.map(k=>mesMap[k]);
+  const ctx2=document.getElementById("chartMes").getContext("2d");
+  if(chartMesInst) chartMesInst.destroy();
+  chartMesInst=new Chart(ctx2,{type:"line",data:{labels:mesLabels,datasets:[{label:"Cadastros",data:mesData,borderColor:"#ffb800",backgroundColor:"rgba(255,184,0,.1)",tension:.4,fill:true,pointBackgroundColor:"#ffb800"}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#666",font:{size:10}}},y:{ticks:{color:"#666",stepSize:1},grid:{color:"rgba(255,255,255,.05)"}}}}});
+  // Top parceiros
+  const parMap={};
+  recs.forEach(r=>{ parMap[r.cadastradoPor]=(parMap[r.cadastradoPor]||0)+1; });
+  const top=Object.entries(parMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById("topParceiros").innerHTML=top.length?top.map(([n,c],i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b)">
+      <div style="width:22px;height:22px;background:${i===0?"var(--gold)":i===1?"#aaa":i===2?"#cd7f32":"var(--muted2)"};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#000;flex-shrink:0">${i+1}</div>
+      <div style="flex:1;font-size:.8rem">${esc(n)}</div>
+      <div style="color:var(--red);font-weight:700;font-size:.9rem">${c}</div>
+    </div>`).join(""):`<div style="color:var(--muted);font-size:.8rem;padding:20px 0;text-align:center">Nenhum registro ainda</div>`;
+  // Últimas consultas sessão
+  const uc=document.getElementById("ultimasConsultas");
+  uc.innerHTML=sessionConsultas.length?sessionConsultas.map(c=>`<div style="display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--b);font-size:.78rem"><span style="color:var(--muted);width:60px;flex-shrink:0">${c.hora}</span><span style="flex:1">${esc(c.numero)}</span><span style="color:${c.resultado.includes("🔴")?"var(--red)":"var(--green)"}">${c.resultado}</span></div>`).join(""):`<div style="color:var(--muted);font-size:.78rem">Nenhuma consulta ainda nesta sessão.</div>`;
+}
+
+// ── NIVEL DE ACESSO ──
+async function alterarAcesso(id, acesso){
+  const u=Object.values(allUsers).find(u=>u.id===id); if(!u) return;
+  await dbSet(dbRef(db,"users/"+id),{...u,acesso});
+  showToast(`Acesso de ${u.nome} atualizado!`);
 }
 </script>
 </body>
